@@ -282,7 +282,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\SendSignal.cs" />
+    <Compile Include="Assets\Scripts\socketScript.cs" />
     <Compile Include="Assets\Scripts\TCPConnection.cs" />
+    <Compile Include="Assets\Scripts\TrafficClasses.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
