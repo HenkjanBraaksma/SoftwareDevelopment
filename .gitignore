@@ -1,11 +1,11 @@
 
 Server/\.idea/
 
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
+TCP IP Test/[Ll]ibrary/
+TCP IP Test/[Tt]emp/
+TCP IP Test/[Oo]bj/
+TCP IP Test/[Bb]uild/
+TCP IP Test/[Bb]uilds/
 Assets/AssetStoreTools*
 
 # Visual Studio cache directory
