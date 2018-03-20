@@ -27,8 +27,6 @@ class TrafficLight implements JSONAware {
 public class KruisPuntServer {
    private ServerSocket serverSocket;
    private Socket server;
-   private PrintWriter out;
-   private BufferedReader in;
    
    public KruisPuntServer(int port) throws IOException {
       serverSocket = new ServerSocket(port);
@@ -42,7 +40,8 @@ public class KruisPuntServer {
             System.out.println("Connected to client on " + server.getRemoteSocketAddress());
             
             JSONParser parser = new JSONParser();
-            in = new BufferedReader(new InputStreamReader(server.getInputStream()));
+            InputStreamReader inStream = new InputStreamReader(server.getInputStream());
+            BufferedReader in = new BufferedReader(inStream);
             String line = in.readLine();
             Object parsedLine = parser.parse(line);
             
@@ -52,7 +51,6 @@ public class KruisPuntServer {
             System.out.println("triggered: " + receivedObj.get("triggered"));
             System.out.println("id: " + receivedObj.get("id"));
             System.out.println("-------------------------\n");       
-            // System.out.println("Client says: " + line);
             
             JSONObject sendObj = new JSONObject();
             sendObj.put("type", "TrafficLightData");
@@ -63,10 +61,13 @@ public class KruisPuntServer {
 
             System.out.println("SENT DATA: " + sendObj);
 
-            out = new PrintWriter(server.getOutputStream(), true);
-            out.println(sendObj);
-            // out.println("hello client from " + server.getLocalSocketAddress());
-            //server.close();
+            OutputStreamWriter outStream = new OutputStreamWriter(server.getOutputStream());
+            BufferedWriter out = new BufferedWriter(outStream);
+            out.write(sendObj + "\n");
+            out.flush();
+
+            inStream.close();
+            outStream.close();
          } catch (IOException e) {
             e.printStackTrace();
             break;

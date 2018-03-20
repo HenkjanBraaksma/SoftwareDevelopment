@@ -18,17 +18,21 @@ public class KruisPuntClient {
       Socket client = new Socket(serverName, port);
       System.out.println("Connected to server on " + client.getRemoteSocketAddress());
 
-      PrintWriter out = new PrintWriter(client.getOutputStream(), true);
+      OutputStreamWriter outStream = new OutputStreamWriter(client.getOutputStream());
+      BufferedWriter out = new BufferedWriter(outStream);
       JSONObject obj = new JSONObject();
       obj.put("type", "PrimaryTrigger");
       obj.put("triggered", "true");
       obj.put("id", "1.1");
-      out.println(obj);
-      // out.println("hello server from " + client.getLocalSocketAddress());
+      out.write(obj + "\n");
+      out.flush();
 
-      BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+      InputStreamReader inStream = new InputStreamReader(client.getInputStream());
+      BufferedReader in = new BufferedReader(inStream);
       System.out.println("Server says: " + in.readLine());
-      //client.close();
+      
+      inStream.close();
+      outStream.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
