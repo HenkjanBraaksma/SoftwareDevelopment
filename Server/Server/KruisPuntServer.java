@@ -1,4 +1,3 @@
-// set CLASSPATH=/users/remote/downloads/json-simple-1.1.1.jar;.
 import java.net.*;
 import java.io.*;
 import org.json.simple.JSONArray;
@@ -71,9 +70,11 @@ public class KruisPuntServer {
          } catch (IOException e) {
             e.printStackTrace();
             break;
-         } catch (ParseException pe) {
-           System.out.println("position: " + pe.getPosition());
-           System.out.println(pe);
+         }
+         catch (ParseException pe) {
+             System.out.println("position: " + pe.getPosition());
+             System.out.println(pe);
+             break;
          }
       }
    }
@@ -88,7 +89,7 @@ public class KruisPuntServer {
       KruisPuntServer kpServer = new KruisPuntServer(port);
       kpServer.run();
     } catch (IOException e) {
-        e.printStackTrace();
+        System.out.println(e);
     }
   }
 }
