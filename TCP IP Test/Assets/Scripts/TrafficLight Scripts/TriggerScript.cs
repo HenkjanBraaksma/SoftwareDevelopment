@@ -8,6 +8,7 @@ public class TriggerScript : MonoBehaviour {
 
     private LightsController controller;
     private string lightID;
+    private int boatCounter = 0;
 
 	// Use this for initialization
 	void Start () {
@@ -17,6 +18,22 @@ public class TriggerScript : MonoBehaviour {
 
     private void OnTriggerEnter(Collider other)
     {
-        controller.TriggerSignal(lightID, triggerID);
+        if(lightID[0] == 4)
+        {
+            boatCounter++;
+        }
+        controller.TriggerSignal(lightID, triggerID, true);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if(lightID[0] == 4)
+        {
+            boatCounter--;
+            if (boatCounter == 0)
+                controller.TriggerSignal(lightID, triggerID, false);
+        }
+        else
+            controller.TriggerSignal(lightID, triggerID, false);
     }
 }

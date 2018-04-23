@@ -42,7 +42,7 @@ public class socketScript : MonoBehaviour
         //once connection has been made, display editable text field with a button to send that string to the server (see function below)
         if (myTCP.socketReady == true)
         {
-            SendSignal testSignal = new SendSignal("PrimaryTrigger", "1.1", true);
+            LightSignal testSignal = new LightSignal("PrimaryTrigger", "1.1", true);
             string serverMessage = JsonUtility.ToJson(testSignal);
 
             if (GUILayout.Button("Write to server", GUILayout.Height(30)))

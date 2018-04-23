@@ -11,11 +11,14 @@ public class TrafficLightBehaviour : MonoBehaviour {
     private Material orange;
     private Material green;
 
+    private Renderer renderer;
+
     public void Start()
     {
         red = Resources.Load("Materials/Red", typeof(Material)) as Material;
         orange = Resources.Load("Materials/Orange", typeof(Material)) as Material;
         green = Resources.Load("Materials/Green", typeof(Material)) as Material;
+        renderer = GetComponent<Renderer>();
     }
 
     public void ChangeLight(string light)
@@ -26,15 +29,15 @@ public class TrafficLightBehaviour : MonoBehaviour {
         {
             case "red":
                 lightStatus = light;
-                GetComponent<Renderer>().material = red;
+                renderer.material = red;
                 break;
             case "orange":
                 lightStatus = light;
-                GetComponent<Renderer>().material = orange;
+                renderer.material = orange;
                 break;
             case "green":
                 lightStatus = light;
-                GetComponent<Renderer>().material = green;
+                renderer.material = green;
                 break;
             default:
                 Debug.Log("Error: Traffic light signal not red/orange/green");

@@ -4,24 +4,63 @@ using UnityEngine;
 
 public class CarBehavior : MonoBehaviour {
 
+    public string road = "";
+    public string identity = "";
+    public int maxSpeed = 45;
+
     private BoxCollider ownCollider;
     private float currentSpeed = 45;
     private bool roadOpen = true;
     private bool noCar = true;
+    private float targetYRotation;
+    private float resultRotation;
+    private float rotationSpeed;
+    private float rayLength;
 
-	// Use this for initialization
-	void Start () {
+    public void SetNewRotation(float newAngle, float newSpeed)
+    {
+        resultRotation = transform.rotation.eulerAngles.y + newAngle;
+        if (newSpeed == 0)
+        {
+            transform.rotation = Quaternion.Euler(0, resultRotation, 0);
+        }
+        else
+        {
+            targetYRotation = newAngle;
+            rotationSpeed = newSpeed;
+        }
+    }
+
+    // Use this for initialization
+    void Start() {
         ownCollider = GetComponent<BoxCollider>();
-	}
-	
-	// Update is called once per frame
-	void Update () {
-        Debug.DrawRay(transform.position, transform.forward * 12, Color.red, Time.deltaTime, false);
+        resultRotation = transform.rotation.eulerAngles.y;
+        if (identity == "CAR" || identity == "BUS")
+            rayLength = 16;
+        else
+            rayLength = 4;
+    }
+
+    // Update is called once per frame
+    void Update() {
+        Debug.DrawRay(transform.position, transform.forward * rayLength, Color.red, Time.deltaTime, false);
+        if (identity == "CAR" || identity == "BUS")
+        {
+            Debug.DrawRay(new Vector3(transform.position.x - 3, transform.position.y, transform.position.z), transform.forward * rayLength, Color.red, Time.deltaTime, false);
+            Debug.DrawRay(new Vector3(transform.position.x + 3, transform.position.y, transform.position.z), transform.forward * rayLength, Color.red, Time.deltaTime, false);
+            Debug.DrawRay(new Vector3(transform.position.x, transform.position.y, transform.position.z - 3), transform.forward * rayLength, Color.red, Time.deltaTime, false);
+            Debug.DrawRay(new Vector3(transform.position.x, transform.position.y, transform.position.z + 3), transform.forward * rayLength, Color.red, Time.deltaTime, false);
+        }
+
+
         CheckCars();
         if (roadOpen && noCar)
+        {
             Move();
+        }
         else
             Brake();
+        RemoveCheck();
     }
 
     void Move()
@@ -29,21 +68,22 @@ public class CarBehavior : MonoBehaviour {
         Vector3 forward = new Vector3(0, 0, currentSpeed);
         transform.Translate(forward * Time.deltaTime);
 
-        if (!(currentSpeed >= 45))
+        if (!(currentSpeed >= maxSpeed))
         {
             currentSpeed += Random.Range(1, 7);
         }
-        if (currentSpeed > 45)
+        if (currentSpeed > maxSpeed)
         {
-            currentSpeed = 45;
+            currentSpeed = maxSpeed;
         }
+        Turn();
     }
 
     void Brake()
     {
         if (currentSpeed > 0)
         {
-            currentSpeed -= 5;
+            currentSpeed -= 2;
             if (currentSpeed < 2)
                 currentSpeed = 0;
 
@@ -52,13 +92,63 @@ public class CarBehavior : MonoBehaviour {
         }
     }
 
+    void Turn()
+    {
+        float currentRotation = transform.rotation.eulerAngles.y;
+        float relativeRotation = 0;
+
+        if (targetYRotation < -1 || targetYRotation > 1)
+        {
+            if (relativeRotation > targetYRotation)
+            {
+                currentRotation -= rotationSpeed * Time.deltaTime;
+                transform.rotation = Quaternion.Euler(0, currentRotation, 0);
+                targetYRotation += rotationSpeed * Time.deltaTime;
+            }
+            if (relativeRotation < targetYRotation)
+            {
+                currentRotation += rotationSpeed * Time.deltaTime;
+                transform.rotation = Quaternion.Euler(0, currentRotation, 0);
+                targetYRotation -= rotationSpeed * Time.deltaTime;
+            }
+        }
+        else
+        {
+            transform.rotation = Quaternion.Euler(0, resultRotation, 0);
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        if(other.gameObject.name == "StopLine")
+        GameObject otherObject = other.gameObject;
+        TrafficLightBehaviour light = otherObject.GetComponentInParent<TrafficLightBehaviour>();
+        if(otherObject.name == "StopLine")
         {
-            Debug.Log("Nice");
-            if (other.gameObject.GetComponentInParent<TrafficLightBehaviour>().lightStatus == "red")
-                roadOpen = false;
+            if(identity == "CAR" || identity == "BUS" || light.lightID == "1.13")
+            {
+                if (light.lightID == road)
+                {
+                    if (light.lightStatus == "red")
+                        roadOpen = false;
+                }
+            }
+            else if (identity == "BIKE" && light.lightID[0] == '2')
+            {
+                if (light.lightStatus == "red")
+                    roadOpen = false;
+            }
+            
+            else if(identity == "HUMAN" && light.lightID[0] == '3')
+            {
+                if (light.lightStatus == "red")
+                    roadOpen = false;
+            }
+
+            else if (identity == "BOAT" && light.lightID[0] == '4')
+            {
+                if (light.lightStatus == "red")
+                    roadOpen = false;
+            }
         }
     }
 
@@ -74,15 +164,41 @@ public class CarBehavior : MonoBehaviour {
     private void CheckCars()
     {
         RaycastHit hitInfo;
+        List<Ray> rayCasts = new List<Ray>();
+        bool noCarSpotted = true;
+
         Ray lookAhead = new Ray(transform.position, transform.forward);
-        if (noCar && Physics.Raycast(lookAhead, out hitInfo, 19f))
+        rayCasts.Add(lookAhead);
+
+        if(identity == "CAR" || identity == "BUS")
         {
-            if (hitInfo.collider.tag == "Car" && hitInfo.collider != ownCollider)
-                noCar = false;
+            Vector3 lookAheadOrigin = lookAhead.origin;
+            lookAhead = new Ray(new Vector3(lookAheadOrigin.x + 3, lookAheadOrigin.y, lookAheadOrigin.z), transform.forward);
+            rayCasts.Add(lookAhead);
+            lookAhead = new Ray(new Vector3(lookAheadOrigin.x - 3, lookAheadOrigin.y, lookAheadOrigin.z), transform.forward);
+            rayCasts.Add(lookAhead);
+            lookAhead = new Ray(new Vector3(lookAheadOrigin.x, lookAheadOrigin.y, lookAheadOrigin.z + 3), transform.forward);
+            rayCasts.Add(lookAhead);
+            lookAhead = new Ray(new Vector3(lookAheadOrigin.x, lookAheadOrigin.y, lookAheadOrigin.z + 3), transform.forward);
+            rayCasts.Add(lookAhead);
         }
-        else if (!noCar && Physics.Raycast(lookAhead, out hitInfo, 28f))
-            noCar = false;
-        else
-            noCar = true;
+
+       foreach (Ray r in rayCasts)
+       {
+            if (Physics.Raycast(r, out hitInfo, rayLength))
+            {
+                    if (hitInfo.collider.tag == "Car" && hitInfo.collider != ownCollider)
+                        noCarSpotted = false;
+            }
+        }
+        noCar = noCarSpotted;
+    }
+
+    private void RemoveCheck()
+    {
+        if(transform.position.y < 195)
+        {
+            Object.Destroy(this.gameObject);
+        }
     }
 }

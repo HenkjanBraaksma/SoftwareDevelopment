@@ -6,6 +6,7 @@ public class LightsController : MonoBehaviour {
 
     TCPConnection tcp;
     TrafficLightBehaviour[] trafficLightChildren;
+    BridgeBehaviour bridgeChild;
 
     private void Awake()
     {
@@ -13,8 +14,10 @@ public class LightsController : MonoBehaviour {
     }
 
     void Start () {
-        tcp.setupSocket();
+        if(IP_Data.connectToTCP)
+            tcp.setupSocket();
         trafficLightChildren = GetComponentsInChildren<TrafficLightBehaviour>();
+        bridgeChild = GetComponentInChildren<BridgeBehaviour>();
 	}
 	
 	// Update is called once per frame
@@ -22,7 +25,7 @@ public class LightsController : MonoBehaviour {
         ReadFromSocket();
 	}
 
-    public void TriggerSignal(string lightID, int triggerID)
+    public void TriggerSignal(string lightID, int triggerID, bool triggerBool)
     {
         Debug.Log("A trigger has been called on Stoplight " + lightID + " Trigger " + triggerID);
         string type;
@@ -31,12 +34,19 @@ public class LightsController : MonoBehaviour {
         else
             type = "SecondaryTrigger";
 
-        SendSignal newSignal = new SendSignal(type, lightID, true);
+        LightSignal newSignal = new LightSignal(type, lightID, triggerBool);
         string newSignalJSON = JsonUtility.ToJson(newSignal);
 
         SendToServer(newSignalJSON);
     }
 
+    public void BridgeSignal(bool bridgeStatus)
+    {
+        Debug.Log("The bridge has just finished opening/closing");
+        BridgeSignal newSignal = new BridgeSignal("BridgeData", bridgeStatus);
+    }
+
+    //Reads a JSON message from the socket, if any have appeared, and processes it.
     void ReadFromSocket()
     {
         string serverSays = tcp.readSocket();
@@ -48,6 +58,7 @@ public class LightsController : MonoBehaviour {
         }
     }
 
+    //Sends a message through the socket.
     public void SendToServer(string str)
     {
         if(tcp.socketReady)
@@ -61,6 +72,7 @@ public class LightsController : MonoBehaviour {
         }
     }
 
+    //Interprets the signal: Always does lights if there are any, and otherwise, runs a different job depending on the type.
     public void ProcessSignal(ReceiveSignal signal)
     {
         TrafficLightBehaviour[] lightsBuffer = trafficLightChildren;
@@ -73,6 +85,10 @@ public class LightsController : MonoBehaviour {
                     light.ChangeLight(lightSignal.lightStatus);
                 }
             }
+        }
+        if (signal.type == "BridgeData")
+        {
+            bridgeChild.signalChange = true;
         }
     }
 }

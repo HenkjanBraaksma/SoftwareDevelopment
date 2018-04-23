@@ -24,7 +24,7 @@ GameObject:
   - component: {fileID: 114520616479044004}
   m_Layer: 0
   m_Name: GreenCar
-  m_TagString: Untagged
+  m_TagString: Car
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -149,7 +149,7 @@ Transform:
   m_GameObject: {fileID: 1069109759217950}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 491.44235, y: 23.7, z: 342.87082}
-  m_LocalScale: {x: 8, y: 9, z: 9}
+  m_LocalScale: {x: 7, y: 8, z: 8}
   m_Children:
   - {fileID: 4138282286673280}
   - {fileID: 4980356245488672}
@@ -441,3 +441,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40aea75ca8339b7498eefdf3fcc60cef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  road: 
+  identity: CAR
+  maxSpeed: 45

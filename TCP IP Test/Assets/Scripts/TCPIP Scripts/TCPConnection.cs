@@ -6,8 +6,8 @@ using System.Net.Sockets;
 
 public class TCPConnection : MonoBehaviour
 {
-    public string connectionName = "DennysComp";
-    //public string connectionHost = "192.168.0.1";
+    public string connectionName = "Kruispuntserver";
+    public string fieldInput = IP_Data.ipAddress;
     public string connectionHost = "localhost";
     public int connectionPort = 1234;
 
@@ -24,6 +24,16 @@ public class TCPConnection : MonoBehaviour
     {
         try
         {
+            try
+            {
+                string[] portBuffer = fieldInput.Split(':');
+                connectionHost = portBuffer[0];
+                connectionPort = Int32.Parse(portBuffer[1]);
+            }
+            catch(Exception e)
+            {
+                Debug.Log("Failed to properly parse the port");
+            }
             socket = new TcpClient(connectionHost, connectionPort);
             stream = socket.GetStream();
             writer = new StreamWriter(stream);
