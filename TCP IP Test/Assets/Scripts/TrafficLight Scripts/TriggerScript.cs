@@ -18,6 +18,7 @@ public class TriggerScript : MonoBehaviour {
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log("Trigger " + triggerID + " of light " + lightID + " triggered");
         if(lightID[0] == 4)
         {
             boatCounter++;

@@ -35,7 +35,7 @@ public class CarBehavior : MonoBehaviour {
     void Start() {
         ownCollider = GetComponent<BoxCollider>();
         resultRotation = transform.rotation.eulerAngles.y;
-        if (identity == "CAR" || identity == "BUS")
+        if (identity == "CAR" || identity == "BUS" || identity == "BOAT")
             rayLength = 16;
         else
             rayLength = 4;
@@ -83,7 +83,7 @@ public class CarBehavior : MonoBehaviour {
     {
         if (currentSpeed > 0)
         {
-            currentSpeed -= 2;
+            currentSpeed -= 5;
             if (currentSpeed < 2)
                 currentSpeed = 0;
 

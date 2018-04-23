@@ -11,7 +11,7 @@ public class TrafficLightBehaviour : MonoBehaviour {
     private Material orange;
     private Material green;
 
-    private Renderer renderer;
+    private new Renderer renderer;
 
     public void Start()
     {

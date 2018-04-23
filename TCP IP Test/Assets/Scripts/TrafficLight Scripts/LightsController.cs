@@ -44,6 +44,9 @@ public class LightsController : MonoBehaviour {
     {
         Debug.Log("The bridge has just finished opening/closing");
         BridgeSignal newSignal = new BridgeSignal("BridgeData", bridgeStatus);
+        string newSignalJSON = JsonUtility.ToJson(newSignal);
+
+        SendToServer(newSignalJSON);
     }
 
     //Reads a JSON message from the socket, if any have appeared, and processes it.
@@ -52,9 +55,19 @@ public class LightsController : MonoBehaviour {
         string serverSays = tcp.readSocket();
         if (serverSays != "")
         {
-            ReceiveSignal received = JsonUtility.FromJson<ReceiveSignal>(serverSays);
-            ProcessSignal(received);
-            Debug.Log("[SERVER]" + serverSays);
+            Debug.Log("SERVER MESSGAGE JSON: " + serverSays);
+
+            string[] messages = serverSays.Split('\n');
+
+            foreach(string message in messages)
+            {
+                if(message[0] == '{')
+                {
+                    ReceiveSignal received = JsonUtility.FromJson<ReceiveSignal>(message);
+                    ProcessSignal(received);
+                    Debug.Log("[SERVER]" + serverSays);
+                }
+            }
         }
     }
 
