@@ -7,6 +7,7 @@ public class CarBehavior : MonoBehaviour {
     public string road = "";
     public string identity = "";
     public int maxSpeed = 45;
+    public bool hitPrimaryTrigger = false;
 
     private BoxCollider ownCollider;
     private float currentSpeed = 45;
@@ -83,7 +84,7 @@ public class CarBehavior : MonoBehaviour {
     {
         if (currentSpeed > 0)
         {
-            currentSpeed -= 5;
+            currentSpeed -= 6;
             if (currentSpeed < 2)
                 currentSpeed = 0;
 
@@ -122,13 +123,13 @@ public class CarBehavior : MonoBehaviour {
     {
         GameObject otherObject = other.gameObject;
         TrafficLightBehaviour light = otherObject.GetComponentInParent<TrafficLightBehaviour>();
-        if(otherObject.name == "StopLine")
+        if(otherObject.name == "StopLine" && hitPrimaryTrigger)
         {
             if(identity == "CAR" || identity == "BUS" || light.lightID == "1.13")
             {
-                if (light.lightID == road)
+                if (light.lightID == road || light.lightID == "1.13")
                 {
-                    if (light.lightStatus == "red")
+                    if (light.lightStatus == "red" || light.lightStatus == "orange")
                         roadOpen = false;
                 }
             }
@@ -144,7 +145,7 @@ public class CarBehavior : MonoBehaviour {
                     roadOpen = false;
             }
 
-            else if (identity == "BOAT" && light.lightID[0] == '4')
+            else if (identity == "BOAT" && light.lightID == road)
             {
                 if (light.lightStatus == "red")
                     roadOpen = false;
@@ -161,13 +162,26 @@ public class CarBehavior : MonoBehaviour {
         }
     }
 
+    private void OnTriggerExit(Collider other)
+    {
+        if(other.gameObject.name == "StopLine")
+        {
+            hitPrimaryTrigger = false;
+        }
+    }
+
     private void CheckCars()
     {
         RaycastHit hitInfo;
         List<Ray> rayCasts = new List<Ray>();
         bool noCarSpotted = true;
+        Vector3 rayPosition = transform.position;
+        if(identity == "BOAT")
+        {
+            rayPosition.y += 0.5f;
+        }
 
-        Ray lookAhead = new Ray(transform.position, transform.forward);
+        Ray lookAhead = new Ray(rayPosition, transform.forward);
         rayCasts.Add(lookAhead);
 
         if(identity == "CAR" || identity == "BUS")

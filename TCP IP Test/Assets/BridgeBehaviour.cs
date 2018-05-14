@@ -64,22 +64,6 @@ public class BridgeBehaviour : MonoBehaviour {
             busy = false;
             open = !open;
 
-            if(open)
-            {
-                foreach(TrafficLightBehaviour t in trafficLights)
-                {
-                    if (t.lightID != "1.13")
-                        t.ChangeLight("green");
-                }
-            }
-            else
-            {
-                foreach (TrafficLightBehaviour t in trafficLights)
-                {
-                    if (t.lightID == "1.13")
-                        t.ChangeLight("green");
-                }
-            }
             controller.BridgeSignal(open);
         }
     }

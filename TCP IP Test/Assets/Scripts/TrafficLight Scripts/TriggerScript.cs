@@ -19,20 +19,26 @@ public class TriggerScript : MonoBehaviour {
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log("Trigger " + triggerID + " of light " + lightID + " triggered");
-        if(lightID[0] == 4)
-        {
-            boatCounter++;
+        if(lightID[0] == '4' && other.gameObject.GetComponentInParent<CarBehavior>().road == lightID)
+            {
+                boatCounter++;
+                Debug.Log("Amount of boats in " + lightID + ": " + boatCounter);
         }
         controller.TriggerSignal(lightID, triggerID, true);
+        other.gameObject.GetComponentInParent<CarBehavior>().hitPrimaryTrigger = true;
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if(lightID[0] == 4)
+        if(lightID[0] == '4')
         {
-            boatCounter--;
-            if (boatCounter == 0)
-                controller.TriggerSignal(lightID, triggerID, false);
+            if (other.gameObject.GetComponentInParent<CarBehavior>().road == lightID)
+            {
+                boatCounter--;
+                Debug.Log("Amount of boats in " + lightID + ": " + boatCounter);
+                if (boatCounter == 0)
+                    controller.TriggerSignal(lightID, triggerID, false);
+            }
         }
         else
             controller.TriggerSignal(lightID, triggerID, false);

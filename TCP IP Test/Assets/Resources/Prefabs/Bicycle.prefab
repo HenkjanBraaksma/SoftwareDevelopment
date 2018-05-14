@@ -71,7 +71,7 @@ GameObject:
   - component: {fileID: 65939944516027518}
   m_Layer: 0
   m_Name: Bicycle
-  m_TagString: Untagged
+  m_TagString: Car
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -570,6 +570,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40aea75ca8339b7498eefdf3fcc60cef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  road: A2C1
+  road: B2C1
   identity: BIKE
   maxSpeed: 15
