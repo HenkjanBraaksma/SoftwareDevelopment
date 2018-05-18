@@ -113,9 +113,9 @@ public class SpawnerScript : MonoBehaviour {
         spawns.Add(new SpawnerDetails("HB2B1", "HUMAN", 140.6f, 508.6f, Quaternion.Euler(0, 195, 0)));
 
 
-        ////Boats
-        //spawns.Add(new SpawnerDetails("4.2", "BOAT", 1989f, 486f, Quaternion.Euler(0, 215, 0)));
-        //spawns.Add(new SpawnerDetails("4.1", "BOAT", 1709f, 21f, Quaternion.Euler(0, 35, 0)));
+        //Boats
+        spawns.Add(new SpawnerDetails("4.2", "BOAT", 1989f, 486f, Quaternion.Euler(0, 215, 0)));
+        spawns.Add(new SpawnerDetails("4.1", "BOAT", 1709f, 21f, Quaternion.Euler(0, 35, 0)));
 
         if (isOn)
             InvokeRepeating("SpawnCar", 5f, 2f);
