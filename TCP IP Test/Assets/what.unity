@@ -5353,7 +5353,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   road: HB2B1
   rotationAngle: -90
-  rotationSpeed: 35
+  rotationSpeed: 25
   alternateRoad: 0
   alternateAngle: 0
   alternateSpeed: 0
