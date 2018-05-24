@@ -17,6 +17,7 @@ public class CarBehavior : MonoBehaviour {
     private float resultRotation;
     private float rotationSpeed;
     private float rayLength;
+    private bool bridgeException = false;
 
     public void SetNewRotation(float newAngle, float newSpeed)
     {
@@ -119,36 +120,54 @@ public class CarBehavior : MonoBehaviour {
         }
     }
 
+
+
     private void OnTriggerEnter(Collider other)
     {
         GameObject otherObject = other.gameObject;
         TrafficLightBehaviour light = otherObject.GetComponentInParent<TrafficLightBehaviour>();
-        if(otherObject.name == "StopLine" && hitPrimaryTrigger)
+        if(otherObject.name == "StopLine")
         {
-            if(identity == "CAR" || identity == "BUS" || light.lightID == "1.13")
+            if (light.lightID == "1.13")
             {
-                if (light.lightID == road || light.lightID == "1.13")
+                if(bridgeException)
                 {
-                    if (light.lightStatus == "red" || light.lightStatus == "orange")
-                        roadOpen = false;
+                    bridgeException = false;
+                }
+                if (light.lightStatus == "red" || light.lightStatus == "orange")
+                {
+                    roadOpen = false;
+                    bridgeException = true;
                 }
             }
-            else if (identity == "BIKE" && light.lightID[0] == '2')
-            {
-                if (light.lightStatus == "red")
-                    roadOpen = false;
-            }
-            
-            else if(identity == "HUMAN" && light.lightID[0] == '3')
-            {
-                if (light.lightStatus == "red")
-                    roadOpen = false;
-            }
 
-            else if (identity == "BOAT" && light.lightID == road)
+            else if (hitPrimaryTrigger)
             {
-                if (light.lightStatus == "red")
-                    roadOpen = false;
+                if (identity == "CAR" || identity == "BUS")
+                {
+                    if (light.lightID == road || light.lightID == "1.13")
+                    {
+                        if (light.lightStatus == "red" || light.lightStatus == "orange")
+                            roadOpen = false;
+                    }
+                }
+                else if (identity == "BIKE" && light.lightID[0] == '2')
+                {
+                    if (light.lightStatus == "red")
+                        roadOpen = false;
+                }
+
+                else if (identity == "HUMAN" && light.lightID[0] == '3')
+                {
+                    if (light.lightStatus == "red")
+                        roadOpen = false;
+                }
+
+                else if (identity == "BOAT" && light.lightID == road)
+                {
+                    if (light.lightStatus == "red")
+                        roadOpen = false;
+                }
             }
         }
     }

@@ -23,7 +23,6 @@ public class TrafficLightBehaviour : MonoBehaviour {
 
     public void ChangeLight(string light)
     {
-        Debug.Log("Light: Changed!");
 
         switch(light)
         {

@@ -27,7 +27,6 @@ public class LightsController : MonoBehaviour {
 
     public void TriggerSignal(string lightID, int triggerID, bool triggerBool)
     {
-        Debug.Log("A trigger has been called on Stoplight " + lightID + " Trigger " + triggerID + ": " + triggerBool);
         string type;
         if (triggerID == 1)
             type = "PrimaryTrigger";
@@ -42,7 +41,6 @@ public class LightsController : MonoBehaviour {
 
     public void BridgeSignal(bool bridgeStatus)
     {
-        Debug.Log("The bridge has just finished opening/closing");
         BridgeSignal newSignal = new BridgeSignal("BridgeStatusData", bridgeStatus);
         string newSignalJSON = JsonUtility.ToJson(newSignal);
 
@@ -55,7 +53,6 @@ public class LightsController : MonoBehaviour {
         string serverSays = tcp.readSocket();
         if (serverSays != "")
         {
-            Debug.Log("SERVER MESSGAGE JSON: " + serverSays);
 
             string[] messages = serverSays.Split('\n');
 

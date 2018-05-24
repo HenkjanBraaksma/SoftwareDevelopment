@@ -130,7 +130,7 @@ public class SpawnerScript : MonoBehaviour {
         {
             SpawnerDetails spawn = spawns[Random.Range(0, spawns.Count)];
 
-            if(true)//spawn.vehicle != lastVehicle && spawn.vehicle != secondToLastVehicle)
+            if(spawn.vehicle != lastVehicle && spawn.vehicle != secondToLastVehicle)
             {
                 switch (spawn.vehicle)
                 {
