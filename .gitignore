@@ -36,6 +36,6 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
-Server/nbproject/private/
-Server/build/
-/Server/dist/
+TrafficController/nbproject/private/
+TrafficController/build/
+TrafficController/dist/

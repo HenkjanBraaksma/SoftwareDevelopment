@@ -3,20 +3,24 @@ package trafficcontroller;
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-public class KruisPuntServer extends Thread {
+public class KruisPuntServer {
 
+    private final int localPort;
     private ServerSocket serverSocket;
     private Socket clientSocket;
     private InputStreamReader inStream;
     private OutputStreamWriter outStream;
     private BufferedWriter out;
+    private Bridge bridge;
     private ArrayList<TrafficLight> lights = new ArrayList<>();
     private ArrayList<TrafficLight> currentCyclus = new ArrayList<>();
     private ArrayList<TrafficLight> nextCyclus = new ArrayList<>();
@@ -24,33 +28,34 @@ public class KruisPuntServer extends Thread {
     private final int CYCLUS_TIME;
     private final int DELAY; // time to wait after lights are red (in milliseconds)
     private int ticks = 0;
-    private boolean isBridgeOpen = false;
-    volatile boolean cyclusRunning = false;
+    private AtomicBoolean cyclusRunning = new AtomicBoolean(false);
 
     private Thread readerThread;
+    final MessageObservable observable;
 
-    public KruisPuntServer(int port, int cyclusTime, int delay) {
+    public KruisPuntServer(int port, int cyclusTime, int delay, MessageObservable observable) {
+        this.localPort = port;
         this.CYCLUS_TIME = cyclusTime;
         this.DELAY = delay;
+        this.observable = observable;
+        this.bridge = new Bridge();
+        createTrafficLights();
         try {
-            createTrafficLights();
-            serverSocket = new ServerSocket(port);
+            serverSocket = new ServerSocket(localPort);
+            runServer();
         } catch (IOException ex) {
-
+            observable.sendMessage("Could not open socket on port " + localPort);
         }
     }
 
-    public void run() {
+    private void runServer() {
         try {
             clientSocket = serverSocket.accept();
-            System.out.println("Connected to client on " + clientSocket.getRemoteSocketAddress());
+            observable.sendMessage("Connected to client on " + clientSocket.getRemoteSocketAddress());
+
             readerThread = new Thread(new Reader(clientSocket));
             readerThread.start();
-        } catch (IOException ex) {
 
-        }
-
-        try {
             outStream = new OutputStreamWriter(clientSocket.getOutputStream(), "UTF-8");
             out = new BufferedWriter(outStream);
 
@@ -60,7 +65,7 @@ public class KruisPuntServer extends Thread {
             tl.setLightStatus("green");
             changedLights.add(tl);
             sendTrafficLightData(changedLights);
-            cyclusRunning = true;
+            cyclusRunning.set(true);
         } catch (IOException ex) {
 
         }
@@ -68,58 +73,76 @@ public class KruisPuntServer extends Thread {
         while (true) {
             try {
                 if (ticks == CYCLUS_TIME) { // cyclus time is up, stop and start new cyclus
-                    cyclusRunning = false;
+                    cyclusRunning.set(false);
                     JSONArray oldCyclusLights = new JSONArray();
                     for (TrafficLight tl : currentCyclus) {
-                        tl.setLightStatus("red");
-                        oldCyclusLights.add(tl);
+                        if (tl.getLightStatus().equals("green")) {
+                            tl.setLightStatus("red");
+                            oldCyclusLights.add(tl);
+                        }
                     }
                     if (oldCyclusLights.size() > 0) {
                         sendTrafficLightData(oldCyclusLights); // set all lights from previous cyclus to red
                     }
+
                     ticks = 0;
                     Thread.sleep(DELAY); // wait for the specified delay time so all cars can leave junction
-                    JSONArray newCyclusLights = new JSONArray();
                     currentCyclus.clear();
                     currentCyclus = new ArrayList<TrafficLight>(nextCyclus);
                     nextCyclus.clear();
-                    boolean openBridge = false;
-                    for (TrafficLight tl : currentCyclus) {
-                        if (tl.getId().startsWith("4.")) { // a boat is waiting, open the bridge
-                            openBridge = true;
-                            TrafficLight bridgeLight = findTrafficLight("1.13");
-                            bridgeLight.setLightStatus("red");
-                            newCyclusLights.add(bridgeLight);
-                        } else if (checkCanSetToGreen(tl)) { // check if no conflicting lanes are already green
+
+                    JSONArray newCyclusLights = new JSONArray();
+                    boolean doOpenBridge = false;
+                    for (Iterator<TrafficLight> it = currentCyclus.iterator(); it.hasNext();) {
+                        TrafficLight tl = it.next();
+                        if (tl.getId().startsWith("4.")) {
+                            if (!doOpenBridge && bridge.getStatus().equals("closed")) { // boat is waiting, indicate that bridge must be opened
+                                doOpenBridge = true;
+                                TrafficLight bridgeLight = findTrafficLight("1.13");
+                                bridgeLight.setLightStatus("red");
+                                newCyclusLights.add(bridgeLight);
+                            } else { // bridge already opened for boat from the other side, move to next cyclus
+                                if (!checkIsInNextCyclus(tl)) {
+                                    nextCyclus.add(tl);
+                                }
+                                it.remove();
+                            }
+                        } else if (checkCanSetToGreen(tl)) {
                             tl.setLightStatus("green");
                             newCyclusLights.add(tl);
-                        } else {
-                            nextCyclus.add(tl); // conflicting lane is already green, wait until next cyclus
+                        } else { // conflicting light is already green, move light to next cyclus
+                            if (!checkIsInNextCyclus(tl)) {
+                                nextCyclus.add(tl);
+                            }
+                            it.remove();
                         }
                     }
                     if (newCyclusLights.size() > 0) {
                         sendTrafficLightData(newCyclusLights); // set the lights for new cyclus to green
                     }
-                    if (openBridge == true) {
+                    if (doOpenBridge) { // open the bridge (if not open and there is a boat)
+                        bridge.setStatus("moving");
                         sendBridgeData(true);
+                    } else if (bridge.getStatus().equals("open")) {
+                        bridge.setStatus("moving");
+                        sendBridgeData(false); // close the bridge (if open and there are no boats)
                     }
-                    cyclusRunning = true;
+                    cyclusRunning.set(true);
                 } else {
                     ticks += 1;
                     Thread.sleep(1000);
                 }
             } catch (InterruptedException ex) {
                 try {
-                    serverSocket.close();
                     inStream.close();
                     outStream.close();
                     readerThread.interrupt();
-                    System.out.println("Server stopped.");
+                    serverSocket.close();
                     break;
                 } catch (IOException ex1) {
 
                 }
-            } catch (IOException ex1) {
+            } catch (IOException ex) {
 
             }
         }
@@ -158,6 +181,7 @@ public class KruisPuntServer extends Thread {
         obj.put("type", "TrafficLightData");
         obj.put("trafficLights", changedLights);
         out.write(obj + "\n");
+        System.out.println("SERVER: " + obj + ".");
         out.flush();
     }
 
@@ -238,14 +262,15 @@ public class KruisPuntServer extends Thread {
                     String line = in.readLine();
                     if (line != null) {
                         try {
+                            System.out.println("CLIENT: " + line);
                             Object parsedLine = parser.parse(line);
                             JSONObject receivedObj = (JSONObject) parsedLine;
 
                             String type = (String) receivedObj.get("type");
                             if (type.equals("BridgeStatusData")) {
                                 boolean opened = (boolean) receivedObj.get("opened");
-                                isBridgeOpen = opened;
                                 if (opened) { // bridge has opened
+                                    bridge.setStatus("open");
                                     for (TrafficLight tl : currentCyclus) {
                                         if (tl.getId().startsWith("4.")) { // set the light for the boat in current cyclus to green
                                             tl.setLightStatus("green");
@@ -256,6 +281,7 @@ public class KruisPuntServer extends Thread {
                                         }
                                     }
                                 } else { // bridge has closed, set car light near bridge to green
+                                    bridge.setStatus("closed");
                                     TrafficLight tl = findTrafficLight("1.13");
                                     tl.setLightStatus("green");
                                     JSONArray changedLights = new JSONArray();
@@ -265,38 +291,24 @@ public class KruisPuntServer extends Thread {
                             } else if (type.equals("TimeScaleData")) {
                                 sendTimeScaleVerifyData(false); // timescale has not been implemented (yet)
                             } else if (type.equals("SecondaryTrigger")) {
-                                String lightId = (String) receivedObj.get("id");
-                                TrafficLight tl = findTrafficLight(lightId);
                                 boolean triggered = (boolean) receivedObj.get("triggered");
                                 if (triggered) {
+                                    String lightId = (String) receivedObj.get("id");
+                                    TrafficLight tl = findTrafficLight(lightId);
                                     tl.increaseVehicleCount(); // add car to the lane
                                 }
                             } else if (type.equals("PrimaryTrigger")) {
                                 String lightId = (String) receivedObj.get("id");
                                 TrafficLight tl = findTrafficLight(lightId);
                                 boolean triggered = (boolean) receivedObj.get("triggered");
-                                if (!triggered && lightId.startsWith("1.")) {
+                                if (!triggered && lightId.startsWith("1.") && tl.getLightStatus().equals("green")) {
                                     tl.decreaseVehicleCount(); // car leaves lane
-                                }
-                                if (triggered && tl.getLightStatus().equals("red")) { // check if light can be set to green
-                                    boolean canGo = checkCanSetToGreen(tl);
-                                    if (canGo && cyclusRunning == true) { // vehicle can go, add to current cyclus and set to green
-                                        tl.setLightStatus("green");
-                                        currentCyclus.add(tl);
-                                        JSONArray changedLights = new JSONArray();
-                                        changedLights.add(tl);
-                                        sendTrafficLightData(changedLights);
-                                    } else if (!checkIsInNextCyclus(tl)) { // add to next cyclus
-                                        nextCyclus.add(tl);
-                                    }
-
-                                } else if (!triggered && tl.getLightStatus().equals("green")) { // vehicle goes past light
-                                    if (lightId.startsWith("1.") && tl.getVehicleCount() == 0) { // car lane is empty, set to red after delay
+                                    if (tl.getVehicleCount() == 0) { // if lane is empty, set to red (after delay)
                                         Timer timer = new Timer();
                                         timer.schedule(new TimerTask() {
                                             @Override
                                             public void run() {
-                                                if (tl.getVehicleCount() == 0 && cyclusRunning == true) { // check again if no car arrived or cyclus ended in the meantime
+                                                if (cyclusRunning.get() == true && tl.getVehicleCount() == 0) { // check if no cars arrived and cyclus still running
                                                     try {
                                                         tl.setLightStatus("red");
                                                         JSONArray changedLights = new JSONArray();
@@ -310,13 +322,39 @@ public class KruisPuntServer extends Thread {
                                         }, DELAY); // wait until the car has left the junction
                                     }
                                 }
+                                if (triggered && tl.getLightStatus().equals("red")) { // check if light can be set to green
+                                    if (cyclusRunning.get() == true) {
+                                        boolean canGo = checkCanSetToGreen(tl);
+                                        if (canGo && (!lightId.startsWith("4.") || lightId.startsWith("4.") && bridge.getStatus().equals("open"))) { // vehicle can go, add to current cyclus and set to green
+                                            tl.setLightStatus("green");
+                                            currentCyclus.add(tl);
+                                            JSONArray changedLights = new JSONArray();
+                                            changedLights.add(tl);
+                                            sendTrafficLightData(changedLights);
+                                        } else if (!checkIsInNextCyclus(tl)) { // add to next cyclus
+                                            nextCyclus.add(tl);
+                                        }
+                                    } else {
+                                        Timer t = new Timer();
+                                        t.schedule(new TimerTask() {
+                                            @Override
+                                            public void run() {
+                                                if (!checkIsInNextCyclus(tl)) {
+                                                    nextCyclus.add(tl);
+                                                }
+                                            }
+                                        }, DELAY); // wait until cyclus is running again before adding to next
+                                    }
+
+                                }
                             }
                         } catch (ParseException pe) {
                             System.out.println("position: " + pe.getPosition());
                             System.out.println(pe);
                         }
+                    } else {
+                        Thread.sleep(17); // 17 milliseconds = 60 fps (?)
                     }
-                    Thread.sleep(17); // 17 milliseconds = 60 fps (?)
                 } catch (IOException | InterruptedException e) {
 
                 }
